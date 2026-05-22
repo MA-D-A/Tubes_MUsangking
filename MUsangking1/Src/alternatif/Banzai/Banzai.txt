@@ -1,0 +1,186 @@
+============================================================
+BANZAI - Robocode Tank Royale Bot Explanation
+============================================================
+
+OVERVIEW
+--------
+Banzai is a Robocode Tank Royale bot written in C#. Its core strategy is:
+  - Constantly scan for enemies with a spinning radar
+  - Always target the CLOSEST enemy in any given tick
+  - Predict where the enemy will be when a bullet arrives, then shoot that spot
+  - When hit by a bullet, snap the radar toward the shooter and ram them
+
+============================================================
+FIELDS (State Variables)
+============================================================
+
+  double[] enemy          - [X, Y] of the last known enemy position.
+                            Starts at the center of the arena as a fallback.
+
+  double lastDirection    - The body turn direction from the previous tick.
+                            Used to detect when direction changes.
+
+  bool changeDirection    - Flag set when a direction reversal is requested.
+                            (Currently unused in practice — see note below.)
+
+  int turnsSinceShot      - Counts ticks since the last enemy was scanned.
+                            Triggers a full radar sweep after 10 ticks.
+
+  double nearestDistance  - Tracks the closest enemy distance within the
+                            current tick. Reset to MaxValue after each Go().
+                            Ensures only the nearest scanned bot is targeted.
+
+  bool ramMode            - When true, the bot switches from predictive
+                            shooting to direct ramming behavior.
+
+  int ramTimer            - Countdown (in ticks) for how long ram mode lasts.
+                            Set to 40 when hit; decrements each tick.
+
+============================================================
+INITIALIZATION (Run — before the loop)
+============================================================
+
+1. Sets the bot's visual colors (body, turret, radar, bullet, tracks, gun).
+
+2. Sets gun and radar turn rates to maximum so they can rotate freely.
+
+3. Sets enemy position to the arena center as an initial fallback target.
+
+4. Decouples the gun, radar, and body so they rotate independently:
+     AdjustGunForBodyTurn = true
+     AdjustRadarForGunTurn = true
+     AdjustRadarForBodyTurn = true
+
+5. Starts the radar spinning toward the initial enemy (arena center).
+
+6. Points the gun toward the initial enemy position.
+
+============================================================
+MAIN LOOP (Run — while IsRunning)
+============================================================
+
+Each tick (each call to Go()), the bot does the following:
+
+  1. Increments turnsSinceShot.
+
+  2. Ram mode countdown:
+       If ramMode is active, decrements ramTimer.
+       When ramTimer hits 0, ramMode is cleared and normal behavior resumes.
+
+  3. Computes the angle to the last known enemy position.
+
+  4. turnDirection is hardcoded to 1 (always forward).
+     NOTE: The changeDirection/MaxSpeed block below is effectively dead code
+     because turnDirection never changes. It was intended to slow the bot
+     before reversing for tighter turns, but reversal never triggers.
+
+  5. Sets MaxSpeed to 9 (full speed) under normal conditions.
+
+  6. Commands the bot to move forward continuously (SetForward(999)).
+
+  7. Radar behavior:
+       - If no enemy spotted for > 10 ticks: spin radar 360° to search.
+       - Otherwise: turn the body toward the last known enemy position.
+
+  8. Calls SetRescan() to request another scan event next tick.
+
+  9. Calls Go() to execute all queued commands.
+
+ 10. Resets nearestDistance to MaxValue so the next tick starts fresh.
+
+============================================================
+OnScannedBot — Enemy Detected
+============================================================
+
+Fires whenever the radar sweeps over a bot. Logic:
+
+  STEP 1 — Closest enemy filter:
+    Compute distance to the scanned bot.
+    If NOT in ram mode AND this bot is farther than the current nearest,
+    ignore this scan entirely (return early).
+    Otherwise, update nearestDistance so even closer bots this tick can
+    still override.
+
+  STEP 2 — Reset turnsSinceShot to 0 (enemy is visible).
+
+  STEP 3 — Ram mode branch:
+    If ramMode is active (triggered by being hit):
+      - Turn body directly toward the scanned bot.
+      - Drive straight at them (SetForward = current distance).
+      - Point gun directly at them (no prediction).
+      - Fire at maximum power (3).
+      - Update enemy position to this bot's location.
+      - Return — skip all predictive shooting logic.
+
+  STEP 4 — Normal mode (predictive shooting):
+    a. Lock radar onto this enemy (SetTurnRadarLeft to their bearing).
+
+    b. Choose firepower:
+         distance < 100  →  3.0  (close range, maximum damage)
+         otherwise       →  1.1  (long range, fast bullet)
+
+    c. Bullet travel time prediction loop:
+         Simulate the enemy moving at their current speed and direction,
+         tick by tick, until the bullet would close the distance.
+         Clamp predicted position to arena bounds (18px from each wall)
+         if the enemy would move out of bounds.
+
+    d. Aim the gun at the predicted future position.
+
+    e. Fire with the chosen firepower.
+
+    f. Store the predicted position as the new enemy[] target so the
+       main loop drives the body toward it next tick.
+
+============================================================
+OnHitByBullet — Bot Takes a Hit
+============================================================
+
+Fires when the bot is struck by a bullet. Logic:
+
+  1. Determine the shooter's direction:
+       e.Bullet.Direction is where the bullet was TRAVELING.
+       The shooter is 180 degrees the other way:
+         shooterDir = e.Bullet.Direction + 180
+
+  2. Compute how far the radar needs to turn to face that direction:
+         radarTurn = shooterDir - RadarDirection
+       Normalize to the range [-180, 180] so the radar takes the
+       shortest path.
+
+  3. Turn the radar toward the shooter.
+
+  4. Enable ram mode: ramMode = true, ramTimer = 40.
+       For the next 40 ticks, the first bot the radar finds will be
+       chased and rammed instead of shot at predictively.
+
+============================================================
+SideAngle (Helper)
+============================================================
+
+  Takes an angle and returns:
+    +1 if the angle is positive (turn left)
+    -1 if the angle is negative (turn right)
+
+  Used to decide which direction to spin the radar at startup.
+
+============================================================
+STRATEGY SUMMARY
+============================================================
+
+Normal behavior:
+  The bot drives forward, spins its radar, and always shoots the closest
+  visible enemy using bullet-travel-time prediction. If an enemy disappears
+  for more than 10 ticks it does a full radar sweep to relocate.
+
+Reactive behavior (after being hit):
+  The bot immediately snaps its radar toward the shooter, activates ram
+  mode, then drives directly into the first bot it detects — firing at
+  maximum power. Ram mode lasts 40 ticks before reverting to normal.
+
+Firepower tiers:
+  < 100 units away  →  power 3  (max damage, slower bullet)
+  >= 100 units away →  power 1.1 (lower damage, faster bullet)
+  Higher power bullets are slower, so prediction is more important at range.
+
+============================================================

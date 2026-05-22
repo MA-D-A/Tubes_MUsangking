@@ -1,0 +1,10 @@
+{
+  "name": "Banzai",
+  "version": "1.1",
+  "authors": ["alif"],
+  "description": "Bot yang menyerang mengutama kan jarak. dia akan meng lock musuh dan mendekat jarak terhadap musuh yang di lock",
+  "homepage": "",
+  "countryCodes": ["id"],
+  "platform": ".Net 6.0",
+  "programmingLang": "C# 10.0"
+}
