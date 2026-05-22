@@ -24,11 +24,12 @@ Sebelum menjalankan program, pastikan Anda memiliki beberapa dependensi berikut:
   2. Dalam setiap folder bot yang ingin digunakan, edit file NamaBot.csproj pada bagian TargetFramework dengan mengubahnya menjadi versi .NET anda:
   3. Hapus folder bin dan obj, dan jalankan:
 ## Bash
-jika menggunakan linux jalankan
-(file .sh) <br>
+jika menggunakan linux jalankan <br>
+(**file .sh**) 
 
-## Command Prompt
-(jika menggunakan os windows jalanan file.cmd)
+## Command Prompt 
+jika menggunakan os windows <br>
+(**file.cmd**)
 
 ## Author
 | Nama | NIM |
