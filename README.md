@@ -25,11 +25,15 @@ Sebelum menjalankan program, pastikan Anda memiliki beberapa dependensi berikut:
   3. Hapus folder bin dan obj, dan jalankan:
 ## Bash
 jika menggunakan linux jalankan <br>
-(**file .sh**) 
+```
+file.sh
+```
 
 ## Command Prompt 
 jika menggunakan os windows <br>
-(**file.cmd**)
+```
+file.cmd
+```
 
 ## Author
 | Nama | NIM |
