@@ -2,7 +2,7 @@
   "name": "Ireng",
   "version": "1.0",
   "authors": ["Andra"],
-  "description": "A bot that drives forward and backward, and fires a bullet",
+  "description": "A bot that move strafing that maximizing survival score by shoot in safe place and predict shootinh ",
   "homepage": "",
   "countryCodes": ["id"],
   "platform": ".Net 6.0",

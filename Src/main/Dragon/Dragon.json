@@ -2,7 +2,7 @@
   "name": "Dragon",
   "version": "1.0",
   "authors": ["Andra"],
-  "description": "A bot that drives forward and backward, and fires a bullet",
+  "description": "A strong bot like his name that maximizing kill count by consitent achieving bullet damage score",
   "homepage": "",
   "countryCodes": ["id"],
   "platform": ".Net 6.0",
